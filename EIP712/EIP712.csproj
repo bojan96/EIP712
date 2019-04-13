@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Nethereum.ABI" Version="3.2.0" />
     <PackageReference Include="Nethereum.Util" Version="3.2.0" />
   </ItemGroup>
 
