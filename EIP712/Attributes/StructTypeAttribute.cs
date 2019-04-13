@@ -6,7 +6,7 @@ using EIP712.Utilities;
 
 namespace EIP712.Attributes
 {
-    class StructTypeAttribute
+    class StructTypeAttribute : Attribute
     {
 
         public string AbiType { get; }
