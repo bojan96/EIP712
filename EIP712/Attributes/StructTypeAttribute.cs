@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using EIP712.Utilities;
 
 namespace EIP712.Attributes
 {
-    class StructTypeAttribute : Attribute
+    public class StructTypeAttribute : Attribute
     {
 
         public string AbiType { get; }
@@ -19,6 +16,7 @@ namespace EIP712.Attributes
             else if (!Utilities.Utilities.AllowedTypes.Contains(abiType))
                 throw new ArgumentException("Given type not supported or valid", nameof(abiType));
 
+            AbiType = abiType;
             Order = order;
         }
     }
