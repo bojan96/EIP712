@@ -1,6 +1,8 @@
 ﻿using EIP712.Attributes;
 using EIP712.Utilities;
 using Nethereum.ABI.Encoders;
+using Nethereum.Signer;
+using Nethereum.Signer.Crypto;
 using Nethereum.Util;
 using System;
 using System.Diagnostics;
@@ -34,6 +36,15 @@ namespace EIP712
             byte[] hash = HashStruct(structure);
             byte[] result = ByteUtil.Merge(_eip191Header, domainSeparator, hash);
             return result;
+        }
+
+        public static byte[] Hash<T>(T structure, EIP712Domain domain) where T : class
+            => _keccak.CalculateHash(Encode(structure, domain));
+
+        public static byte[] Sign<T>(T structure, EIP712Domain domain, string privateKey) where T : class
+        {
+            EthECDSASignature sig = new EthereumMessageSigner().SignAndCalculateV(Hash(structure, domain), privateKey);
+            return ByteUtil.Merge(sig.R, sig.S, sig.V);
         }
 
 
@@ -122,7 +133,7 @@ namespace EIP712
 
                     default:
                         throw new InvalidOperationException(
-                            $"Can not encode property ${prop.Item1.Name}, type encoding for ${prop.Item2.AbiType} not supported");
+                            $"Can not encode property {prop.Item1.Name}, type encoding for {prop.Item2.AbiType} not supported");
                 }
 
                 Debug.Assert(part.Length == 32);
