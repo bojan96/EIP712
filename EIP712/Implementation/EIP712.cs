@@ -53,9 +53,9 @@ namespace EIP712
             Type structType = structure.GetType();
 
             // Get all properties on which StructTypeAttribute is applied
-            Tuple<PropertyInfo, StructTypeAttribute>[] props = structType.GetProperties().
-                Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(StructTypeAttribute))).
-                Select(prop => Tuple.Create(prop, prop.GetCustomAttribute<StructTypeAttribute>())).
+            Tuple<PropertyInfo, MemberAttribute>[] props = structType.GetProperties().
+                Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(MemberAttribute))).
+                Select(prop => Tuple.Create(prop, prop.GetCustomAttribute<MemberAttribute>())).
                 OrderBy(propAttrPair => propAttrPair.Item2.Order).ToArray();
 
             byte[] typeHash = CalculateTypeHash(structure, props);
@@ -65,7 +65,7 @@ namespace EIP712
         }
 
         private static byte[] CalculateTypeHash<T>(T structure,
-            Tuple<PropertyInfo, StructTypeAttribute>[] props)
+            Tuple<PropertyInfo, MemberAttribute>[] props)
         {
 
             Type structType = structure.GetType();
@@ -90,7 +90,7 @@ namespace EIP712
             return _keccak.CalculateHash(Encoding.UTF8.GetBytes(encodedType));
         }
 
-        private static byte[] EncodeData<T>(T structure, Tuple<PropertyInfo, StructTypeAttribute>[] props)
+        private static byte[] EncodeData<T>(T structure, Tuple<PropertyInfo, MemberAttribute>[] props)
         {
             byte[] result = new byte[0];
             byte[] part = null;
