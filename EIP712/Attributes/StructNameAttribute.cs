@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace EIP712.Attributes
 {
-    internal class StructNameAttribute : Attribute
+    public class StructNameAttribute : Attribute
     {
         public string Name { get; }
 
