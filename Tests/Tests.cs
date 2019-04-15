@@ -20,7 +20,7 @@ namespace Tests
                 Version = "1",
                 ChainId = 3,
                 VerifyingContract = ZeroAddress
-            }, PrivateKey);
+            }, PrivateKey).GetPacked();
 
             byte[] expectedSignature 
                 = ("0x7687371d01daf89bb7fc1adcb91bc30de45d5f6fea2ac73c123c78a2fbe347b65cb3bd4" +
