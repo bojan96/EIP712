@@ -18,13 +18,14 @@ namespace EIP712
         private static readonly byte[] _eip191Header = new byte[] { 0x19, 0x1 };
         private static readonly Sha3Keccack _keccak = Sha3Keccack.Current;
 
+        #region PublicApi
         /// <summary>
         /// Encodes structured data according to EIP-712 specification
         /// </summary>
         /// <typeparam name="T">Structured data datatype</typeparam>
         /// <param name="structure">Structured data to encode</param>
         /// <param name="domain">EIP-712 domain</param>
-        /// <returns></returns>
+        /// <returns>Encoded data</returns>
         public static byte[] Encode<T>(T structure, EIP712Domain domain) where T : class
         {
             if (domain == null)
@@ -38,21 +39,60 @@ namespace EIP712
             return result;
         }
 
+        /// <summary>
+        /// Hash structured data 
+        /// </summary>
+        /// <typeparam name="T">Structured data datatype</typeparam>
+        /// <param name="structure">Structured data to hash</param>
+        /// <param name="domain">EIP-712 domain</param>
+        /// <returns>Keccak256 of encoded data</returns>
         public static byte[] Hash<T>(T structure, EIP712Domain domain) where T : class
-            => _keccak.CalculateHash(Encode(structure, domain));
-
-        public static EthereumSignature Sign<T>(T structure, EIP712Domain domain, string privateKey) where T : class
         {
-            EthECDSASignature sig = new MessageSigner().SignAndCalculateV(Hash(structure, domain), privateKey);
-            return new EthereumSignature(sig.R, sig.S, sig.V);
+            if (structure == null)
+                throw new ArgumentNullException(nameof(structure));
+            if (domain == null)
+                throw new ArgumentNullException(nameof(domain));
+
+            return _keccak.CalculateHash(Encode(structure, domain));
         }
 
+        /// <summary>
+        /// Sign structured data
+        /// </summary>
+        /// <typeparam name="T">Structured data datatype</typeparam>
+        /// <param name="structure">Structured data to hash</param>
+        /// <param name="domain">EIP-712 domain</param>
+        /// <param name="privateKey">Ethereum private key</param>
+        /// <returns><see cref="EthereumSignature"/></returns>
+        public static EthereumSignature Sign<T>(T structure, EIP712Domain domain, string privateKey) where T : class
+        {
+            if (structure == null)
+                throw new ArgumentNullException(nameof(structure));
+            if (domain == null)
+                throw new ArgumentNullException(nameof(domain));
+            if (privateKey == null)
+                throw new ArgumentNullException(nameof(privateKey));
 
+            EthECDSASignature sig = new MessageSigner().SignAndCalculateV(Hash(structure, domain), privateKey);
+
+            // Returning custom type since we do not want force lib users to install additional package  (i.e. Nethereum)
+            return new EthereumSignature(sig.R, sig.S, sig.V);
+        }
+        #endregion
+
+        #region Implementation
+
+        /// <summary>
+        /// Implements hashStruct from EIP712
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="structure"></param>
+        /// <returns></returns>
         private static byte[] HashStruct<T>(T structure) where T : class
         {
             Type structType = structure.GetType();
 
-            // Get all properties on which StructTypeAttribute is applied
+            // Get all properties on which StructTypeAttribute is applied and order them by "Order" property
             Tuple<PropertyInfo, MemberAttribute>[] props = structType.GetProperties().
                 Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(MemberAttribute))).
                 Select(prop => Tuple.Create(prop, prop.GetCustomAttribute<MemberAttribute>())).
@@ -123,8 +163,7 @@ namespace EIP712
                         break;
 
                     case "string":
-                        byte[] temp = Encoding.UTF8.GetBytes((string)val);
-                        part = _keccak.CalculateHash(temp);
+                        part = _keccak.CalculateHash(Encoding.UTF8.GetBytes((string)val));
                         break;
 
                     case "bytes32":
@@ -132,7 +171,7 @@ namespace EIP712
                         break;
 
                     default:
-                        throw new InvalidOperationException(
+                        throw new NotSupportedException(
                             $"Can not encode property {prop.Item1.Name}, type encoding for {prop.Item2.AbiType} not supported");
                 }
 
@@ -142,6 +181,8 @@ namespace EIP712
             }
             return result;
         }
+
+        #endregion
 
     }
 }
