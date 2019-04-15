@@ -41,10 +41,10 @@ namespace EIP712
         public static byte[] Hash<T>(T structure, EIP712Domain domain) where T : class
             => _keccak.CalculateHash(Encode(structure, domain));
 
-        public static byte[] Sign<T>(T structure, EIP712Domain domain, string privateKey) where T : class
+        public static EthereumSignature Sign<T>(T structure, EIP712Domain domain, string privateKey) where T : class
         {
-            EthECDSASignature sig = new EthereumMessageSigner().SignAndCalculateV(Hash(structure, domain), privateKey);
-            return ByteUtil.Merge(sig.R, sig.S, sig.V);
+            EthECDSASignature sig = new MessageSigner().SignAndCalculateV(Hash(structure, domain), privateKey);
+            return new EthereumSignature(sig.R, sig.S, sig.V);
         }
 
 
