@@ -1,6 +1,6 @@
 ﻿using Nethereum.Util;
 
-namespace EIP712.Implementation
+namespace EIP712
 {
     public class EthereumSignature
     {
