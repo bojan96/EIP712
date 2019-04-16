@@ -3,7 +3,7 @@ solution: EIP712.sln
 mono: none
 branches:
     only:
-    - feature/*
+    - dev
 
 dotnet: 2.1.504
 install: true
