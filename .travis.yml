@@ -1,9 +1,11 @@
 language: csharp
 solution: EIP712.sln
 mono: none
+if: branch = dev OR branch = master
+
 branches:
     only:
-    - dev
+    - feature/*
 
 dotnet: 2.1.504
 install: true
