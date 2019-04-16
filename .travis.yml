@@ -1,0 +1,11 @@
+language: csharp
+solution: EIP712.sln
+mono: none
+branches:
+    only:
+    - feature/*
+
+dotnet: 2.1.504
+install: true
+script: 
+    - dotnet test

@@ -3,9 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EIP712", "EIP712\EIP712.csproj", "{1D26D7A7-97B6-4F68-8FC2-66D466A9CFA3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EIP712", "EIP712\EIP712.csproj", "{1D26D7A7-97B6-4F68-8FC2-66D466A9CFA3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{C1D1BD60-D94E-435C-AD52-4359D4DEE560}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{C1D1BD60-D94E-435C-AD52-4359D4DEE560}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3D1D6676-825E-408A-9CD0-ADC16C920470}"
+	ProjectSection(SolutionItems) = preProject
+		.travis.yml = .travis.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
