@@ -5,7 +5,7 @@ if: branch = dev OR branch = master
 
 branches:
     only:
-    - feature/*
+        - feature/*
 
 dotnet: 2.1.504
 install: true
