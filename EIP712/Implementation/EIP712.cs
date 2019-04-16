@@ -1,12 +1,13 @@
 ﻿using EIP712.Attributes;
+using EIP712.Exceptions;
 using EIP712.Utilities;
 using Nethereum.ABI.Encoders;
 using Nethereum.Signer;
-using Nethereum.Signer.Crypto;
 using Nethereum.Util;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 
@@ -112,7 +113,8 @@ namespace EIP712
             StructNameAttribute nameAttr = structType.GetCustomAttribute<StructNameAttribute>();
             string encodedType = $"{(nameAttr == null ? structType.Name : nameAttr.Name)}(";
 
-            string nameTypeConcatenated = props.Aggregate(string.Empty, (accumulated, prop) => {
+            string nameTypeConcatenated = props.Aggregate(string.Empty, (accumulated, prop) =>
+            {
 
                 // If values is null do not encode type
                 if (prop.Item1.GetValue(structure) == null)
@@ -143,18 +145,24 @@ namespace EIP712
                 // TODO: Implement proper error handling
 
                 val = prop.Item1.GetValue(structure);
+                string abiType = prop.Item2.AbiType;
+                PropertyInfo propInfo = prop.Item1;
 
                 // Do not encode properties with null values
                 if (val == null)
                     continue;
 
-                switch (prop.Item2.AbiType)
+                switch (abiType)
                 {
                     case "address":
+                        if (!(val is string))
+                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
                         part = new AddressTypeEncoder().Encode(val);
                         break;
 
                     case "uint256":
+                        if (!(Util.IsNumber(val)))
+                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
                         part = new IntTypeEncoder(false, 32).Encode(val);
                         break;
 
