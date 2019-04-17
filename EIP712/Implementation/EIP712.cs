@@ -168,20 +168,26 @@ namespace EIP712
                         break;
 
                     case "bytes":
-                        part = _keccak.CalculateHash((byte[])val);
+                        if (!(val is byte[] value))
+                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        part = _keccak.CalculateHash(value);
                         break;
 
                     case "string":
-                        part = _keccak.CalculateHash(Encoding.UTF8.GetBytes((string)val));
+                        if (!(val is string str))
+                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        part = _keccak.CalculateHash(Encoding.UTF8.GetBytes(str));
                         break;
 
                     case "bytes32":
+                        if (!(val is byte[]))
+                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
                         part = new Bytes32TypeEncoder().Encode(val);
                         break;
 
                     default:
-                        throw new NotSupportedException(
-                            $"Can not encode property {prop.Item1.Name}, type encoding for {prop.Item2.AbiType} not supported");
+                        throw new AbiTypeNotSupportedException(abiType, propInfo.Name);
+
                 }
 
                 Debug.Assert(part.Length == 32);
