@@ -60,7 +60,7 @@ namespace Tests
             {
                 StringType = "test",
                 AddressType = ZeroAddress,
-                IntegerType = 1
+                IntegerType = 0
             }, new EIP712.EIP712Domain()
             {
                 Name = "Test domain name",
