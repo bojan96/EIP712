@@ -47,15 +47,21 @@ namespace Tests
             byte[] signature = EIP712.EIP712.Sign(new TestType(), new EIP712Domain(), PrivateKey).Packed;
 
             byte[] expectedSignature = ("0x79817d9680ab164e7d009280716814ad2ebdb2af577e3be286ace8f0774cd50" +
-                "350ec4ef3af398314e8b334b6d617da53e8eaa98cfc5aa825d0925673ce55d98a1b").HexToByteArray();
+                "350ec4ef3af398314e8b334b6d617da53e8eaa98cfc5aa825d0925673ce55d98a1b").
+                HexToByteArray();
 
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
 
         [TestMethod]
-        public void TestSigning()
+        public void MultipleTypes()
         {
-            byte[] signature = EIP712.EIP712.Sign(new TestType { StringType = "test", AddressType = ZeroAddress }, new EIP712.EIP712Domain()
+            byte[] signature = EIP712.EIP712.Sign(new TestType
+            {
+                StringType = "test",
+                AddressType = ZeroAddress,
+                IntegerType = 1
+            }, new EIP712.EIP712Domain()
             {
                 Name = "Test domain name",
                 Version = "1",
@@ -64,8 +70,8 @@ namespace Tests
             }, PrivateKey).Packed;
 
             byte[] expectedSignature 
-                = ("0x7687371d01daf89bb7fc1adcb91bc30de45d5f6fea2ac73c123c78a2fbe347b65cb3bd4" +
-                "9fac48386a09966d451ebc55e84585f71047c67f02f75ef9939a75f591c").HexToByteArray();
+                = ("0xa65a0c515eaa0d7551c1b37019c45999d24ace285c3c27af2c9f5e63777eceb96da455912b8158c9ecd" +
+                "1174532e515a4564b04d214659b28bee63242744f93b51b").HexToByteArray();
 
             CollectionAssert.AreEqual(expectedSignature, signature);
         }

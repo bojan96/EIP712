@@ -1,4 +1,5 @@
 ﻿using EIP712.Attributes;
+using System.Numerics;
 
 namespace Tests
 {
@@ -9,5 +10,9 @@ namespace Tests
 
         [Member("address", 2)]
         public string AddressType { get; set; }
+
+        [Member("uint256", 3)]
+        public BigInteger? IntegerType { get; set; }
+
     }
 }
