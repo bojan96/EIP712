@@ -60,7 +60,10 @@ namespace Tests
             {
                 StringType = "test",
                 AddressType = ZeroAddress,
-                IntegerType = 0
+
+                // Setting this to zero causes Nethereum ECDSA signature to return S with length of 31
+                // More info: https://github.com/Nethereum/Nethereum/issues/541
+                IntegerType = 1 
             }, new EIP712.EIP712Domain()
             {
                 Name = "Test domain name",
