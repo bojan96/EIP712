@@ -94,7 +94,7 @@ namespace EIP712
             Type structType = structure.GetType();
 
             // Get all properties on which StructTypeAttribute is applied and order them by "Order" property
-            Tuple<PropertyInfo, MemberAttribute>[] props = structType.GetProperties().
+            Tuple<PropertyInfo, MemberAttribute>[] props = structType.GetTypeInfo().DeclaredProperties.
                 Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(MemberAttribute))).
                 Select(prop => Tuple.Create(prop, prop.GetCustomAttribute<MemberAttribute>())).
                 OrderBy(propAttrPair => propAttrPair.Item2.Order).ToArray();
@@ -110,7 +110,8 @@ namespace EIP712
         {
 
             Type structType = structure.GetType();
-            StructNameAttribute nameAttr = structType.GetCustomAttribute<StructNameAttribute>();
+            StructNameAttribute nameAttr = structType.GetTypeInfo().
+                GetCustomAttribute<StructNameAttribute>();
             string encodedType = $"{(nameAttr == null ? structType.Name : nameAttr.Name)}(";
 
             string nameTypeConcatenated = props.Aggregate(string.Empty, (accumulated, prop) =>
