@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Numerics;
 
 namespace EIP712.Utilities
 {
-    internal static class Utilities
+    internal static class Util
     {
 
         /// <summary>
@@ -20,5 +18,12 @@ namespace EIP712.Utilities
                 "bytes32",
                 "string"
             };
+
+
+        public static bool IsNumber(object val)
+            => val is int || val is uint || val is short 
+            || val is ushort || val is long || val is ulong 
+            || val is byte || val is sbyte || val is BigInteger;
+        
     }
 }
