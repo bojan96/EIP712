@@ -14,7 +14,7 @@ namespace Tests
         [TestMethod()]
         public void TestAddressType()
         {
-            byte[] signature = EIP712.EIP712.Sign(new TestType { AddressType = ZeroAddress }, 
+            byte[] signature = EIP712Service.Sign(new TestType { AddressType = ZeroAddress }, 
                 new EIP712Domain(), PrivateKey).Packed;
 
             byte[] expectedSignature = ("0x5a89436f9fa59b0afe4d4bcb0a105c3f2bcc1d36d927ee6060f1f4078ab" +
@@ -27,7 +27,7 @@ namespace Tests
         [TestMethod]
         public void TestStringType()
         {
-            byte[] signature = EIP712.EIP712.Sign(new TestType { StringType = "EthereumMessage" },
+            byte[] signature = EIP712Service.Sign(new TestType { StringType = "EthereumMessage" },
                 new EIP712Domain(), PrivateKey).Packed;
 
             byte[] expectedSignature = ("0x90fc559628b5e423eac6e35f5674040a922a9fc5bd9e176" +
@@ -44,7 +44,7 @@ namespace Tests
         [TestMethod]
         public void TestEmptyType()
         {
-            byte[] signature = EIP712.EIP712.Sign(new TestType(), new EIP712Domain(), PrivateKey).Packed;
+            byte[] signature = EIP712Service.Sign(new TestType(), new EIP712Domain(), PrivateKey).Packed;
 
             byte[] expectedSignature = ("0x79817d9680ab164e7d009280716814ad2ebdb2af577e3be286ace8f0774cd50" +
                 "350ec4ef3af398314e8b334b6d617da53e8eaa98cfc5aa825d0925673ce55d98a1b").
@@ -56,14 +56,11 @@ namespace Tests
         [TestMethod]
         public void MultipleTypes()
         {
-            byte[] signature = EIP712.EIP712.Sign(new TestType
+            byte[] signature = EIP712Service.Sign(new TestType
             {
                 StringType = "test",
                 AddressType = ZeroAddress,
-
-                // Setting this to zero causes Nethereum ECDSA signature to return S with length of 31
-                // More info: https://github.com/Nethereum/Nethereum/issues/541
-                IntegerType = 1 
+                IntegerType = 0 
             }, new EIP712.EIP712Domain()
             {
                 Name = "Test domain name",
@@ -73,8 +70,8 @@ namespace Tests
             }, PrivateKey).Packed;
 
             byte[] expectedSignature 
-                = ("0xa65a0c515eaa0d7551c1b37019c45999d24ace285c3c27af2c9f5e63777eceb96da455912b8158c9ecd" +
-                "1174532e515a4564b04d214659b28bee63242744f93b51b").HexToByteArray();
+                = ("0xbb3221b9a45d5cd9d5f67eba1b23b19bef8176ce640eeb9c29f5d32190f32c8b" +
+                "00e963d60e72b79a56c07006cc83eb56b4e71ecffe2b08cfdcd52e7b18d755201c").HexToByteArray();
 
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
