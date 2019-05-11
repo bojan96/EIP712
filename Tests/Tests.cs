@@ -1,6 +1,8 @@
 using EIP712;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Nethereum.Hex.HexConvertors.Extensions;
+using System.Linq;
+using System.Numerics;
 
 namespace Tests
 {
@@ -12,7 +14,7 @@ namespace Tests
         private const string PrivateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
 
         [TestMethod()]
-        public void TestAddressType()
+        public void AddressTypeSign()
         {
             byte[] signature = EIP712Service.Sign(new TestType { AddressType = ZeroAddress }, 
                 new EIP712Domain(), PrivateKey).Packed;
@@ -25,7 +27,7 @@ namespace Tests
         }
 
         [TestMethod]
-        public void TestStringType()
+        public void StringTypeSign()
         {
             byte[] signature = EIP712Service.Sign(new TestType { StringType = "EthereumMessage" },
                 new EIP712Domain(), PrivateKey).Packed;
@@ -42,7 +44,7 @@ namespace Tests
         /// All member values equal to null
         /// </summary>
         [TestMethod]
-        public void TestEmptyType()
+        public void EmptyTypeSign()
         {
             byte[] signature = EIP712Service.Sign(new TestType(), new EIP712Domain(), PrivateKey).Packed;
 
@@ -54,7 +56,7 @@ namespace Tests
         }
 
         [TestMethod]
-        public void MultipleTypes()
+        public void MultipleTypesSign()
         {
             byte[] signature = EIP712Service.Sign(new TestType
             {
@@ -76,6 +78,29 @@ namespace Tests
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
 
+        [TestMethod]
+        public void LargeIntegerSign()
+        {
+
+            byte[] maxUint256Bytes = Enumerable.Repeat(0xff, 33).
+                Select(@byte => (byte)@byte).ToArray();
+            maxUint256Bytes[32] = 0;
+
+            BigInteger maxUint256 = new BigInteger(maxUint256Bytes);
+            byte[] signature = EIP712Service.Sign(
+                new TestType
+                {
+                    IntegerType = maxUint256
+                },
+                new EIP712Domain(),
+                PrivateKey).Packed;
+
+            byte[] expectedSignature = ("0xf3ff9939b98ee1f904707ed4964dea767c" +
+                "f02426da9817c3197a083e80704ccf3b52f63bd1412d954cb055fe9334cd7e" +
+                "5ef31ba1a3edb06a1f768bdec937812b1c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
 
     }
 }
