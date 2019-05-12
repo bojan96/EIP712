@@ -13,7 +13,7 @@ using System.Text;
 
 namespace EIP712
 {
-    public static class EIP712
+    public static class EIP712Service
     {
 
         private static readonly byte[] _eip191Header = new byte[] { 0x19, 0x1 };
@@ -47,6 +47,8 @@ namespace EIP712
         /// <param name="structure">Structured data to hash</param>
         /// <param name="domain">EIP-712 domain</param>
         /// <returns>Keccak256 of encoded data</returns>
+        /// <exception cref="ArgumentNullException">structure or domain is null</exception>
+        /// <exception cref=""
         public static byte[] Hash<T>(T structure, EIP712Domain domain) where T : class
         {
             if (structure == null)
@@ -77,7 +79,7 @@ namespace EIP712
             EthECDSASignature sig = new MessageSigner().SignAndCalculateV(Hash(structure, domain), privateKey);
 
             // Returning custom type since we do not want force lib users to install additional package  (i.e. Nethereum)
-            return new EthereumSignature(sig.R, sig.S, sig.V);
+            return new EthereumSignature(Util.PadBytes(sig.R, 32), Util.PadBytes(sig.S, 32), sig.V);
         }
         #endregion
 
@@ -141,9 +143,7 @@ namespace EIP712
 
             foreach (var prop in props)
             {
-
                 // TODO: Support more types
-                // TODO: Implement proper error handling
 
                 val = prop.Item1.GetValue(structure);
                 string abiType = prop.Item2.AbiType;
@@ -164,7 +164,7 @@ namespace EIP712
                     case "uint256":
                         if (!(Util.IsNumber(val)))
                             throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                        part = new IntTypeEncoder(false, 32).Encode(val);
+                        part = new IntTypeEncoder(false, 256).Encode(val);
                         break;
 
                     case "bytes":
@@ -186,7 +186,9 @@ namespace EIP712
                         break;
 
                     default:
-                        throw new AbiTypeNotSupportedException(abiType, propInfo.Name);
+                        // Unreachable
+                        Debug.Assert(false);
+                        break;
 
                 }
 
