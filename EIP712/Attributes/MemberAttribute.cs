@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EIP712.Utilities;
+using System;
 using System.Linq;
 
 namespace EIP712.Attributes
@@ -13,7 +14,7 @@ namespace EIP712.Attributes
         {
             if (abiType == null)
                 throw new ArgumentNullException(nameof(abiType));
-            else if (!Utilities.Util.AllowedTypes.Contains(abiType))
+            else if (!Util.AllowedTypes.Contains(abiType))
                 throw new ArgumentException("Given type not supported or valid", nameof(abiType));
 
             AbiType = abiType;
