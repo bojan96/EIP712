@@ -14,7 +14,7 @@ namespace EIP712.Attributes
         {
             if (abiType == null)
                 throw new ArgumentNullException(nameof(abiType));
-            else if (!Util.AllowedTypes.Contains(abiType))
+            else if (!Util.IsValidAbiType(abiType))
                 throw new ArgumentException("Given type not supported or valid", nameof(abiType));
 
             AbiType = abiType;
