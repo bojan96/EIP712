@@ -1,6 +1,7 @@
 ﻿using EIP712.Attributes;
 using EIP712.Exceptions;
 using EIP712.Utilities;
+using Nethereum.ABI;
 using Nethereum.ABI.Encoders;
 using Nethereum.Signer;
 using Nethereum.Util;
@@ -153,43 +154,58 @@ namespace EIP712
                 if (val == null)
                     continue;
 
-                switch (abiType)
+                if(abiType == "address")
                 {
-                    case "address":
-                        if (!(val is string))
-                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                        part = new AddressTypeEncoder().Encode(val);
-                        break;
-
-                    case "uint256":
-                        if (!(Util.IsNumber(val)))
-                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                        part = new IntTypeEncoder(false, 256).Encode(val);
-                        break;
-
-                    case "bytes":
-                        if (!(val is byte[] value))
-                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                        part = _keccak.CalculateHash(value);
-                        break;
-
-                    case "string":
-                        if (!(val is string str))
-                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                        part = _keccak.CalculateHash(Encoding.UTF8.GetBytes(str));
-                        break;
-
-                    case "bytes32":
-                        if (!(val is byte[]))
-                            throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                        part = new Bytes32TypeEncoder().Encode(val);
-                        break;
-
-                    default:
-                        // Unreachable
-                        Debug.Assert(false);
-                        break;
-
+                    if (!(val is string))
+                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                    part = new AddressTypeEncoder().Encode(val);
+                }
+                else if(abiType == "bytes")
+                {
+                    if (!(val is byte[] value))
+                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                    part = _keccak.CalculateHash(value);
+                }
+                else if(abiType == "string")
+                {
+                    if (!(val is string str))
+                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                    part = _keccak.CalculateHash(Encoding.UTF8.GetBytes(str));
+                }
+                else if(abiType == "bool")
+                {
+                    if (!(val is bool))
+                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                    part = new IntTypeEncoder(false, 256).Encode(val);
+                }
+                else if(abiType == "tuple")
+                    part = HashStruct(val);             
+                else if(abiType == "int" || abiType == "uint")
+                {
+                    if (!Util.IsNumber(val))
+                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                    part = new IntTypeEncoder(abiType == "int", 256).Encode(val);
+                }
+                else if((abiType.StartsWith("uint") || abiType.StartsWith("int")) 
+                    && int.TryParse(abiType.Substring(abiType.StartsWith("uint") ? 4 : 3), out int intSize) 
+                    && intSize % 8 == 0 && intSize >= 8 && intSize <= 256)
+                {
+                    if (!Util.IsNumber(val))
+                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                    part = new IntTypeEncoder(abiType.StartsWith("int"), (uint)intSize).Encode(val);
+                }
+                else if(abiType.StartsWith("bytes") && 
+                    int.TryParse(abiType.Substring(4), out int bytesSize) 
+                    && bytesSize > 0 && bytesSize <= 32)
+                {
+                    if (!(val is byte[]))
+                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                    part = new BytesElementaryTypeEncoder(bytesSize).Encode(val);
+                }
+                else
+                {
+                    // Unreachable
+                    Debug.Assert(false);
                 }
 
                 Debug.Assert(part.Length == 32);
