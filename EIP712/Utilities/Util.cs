@@ -52,39 +52,40 @@ namespace EIP712.Utilities
             Debug.Assert(abiType != null);
             return AllowedTypes.Contains(abiType) 
                 || IsValidBytesType(abiType, out int sizeBytes) 
-                || IsValidIntegerAbiType(abiType, out int sizeInts);
+                || IsValidIntegerAbiType(abiType, out int sizeInts, out bool signed);
         }
 
         /// <summary>
         /// Determines whether specified ABI type is valid integer type
         /// </summary>
         /// <param name="intAbiType">ABI type</param>
-        /// <returns>true if specified type is valid integer type with size set to size of 
-        /// integer type, otherwise false with size equal to zero</returns>
-        public static bool IsValidIntegerAbiType(string intAbiType, out int size)
+        /// <returns>trueif specified type is valid integer type, 
+        /// false otherwise</returns>
+        public static bool IsValidIntegerAbiType(string intAbiType, out int size, out bool signed)
         {
             Debug.Assert(intAbiType != null);
 
             size = 0;
-            bool signed = false;
+            signed = false;
+            bool signedInteger = false;
             bool valid = false;
 
-            if (intAbiType.StartsWith("uint") || (signed = intAbiType.StartsWith("int")))
+            if (intAbiType.StartsWith("uint") || (signedInteger = intAbiType.StartsWith("int")))
             {
-                string sizePart = intAbiType.Substring(signed ? 3 : 4);
+                string sizePart = intAbiType.Substring(signedInteger ? 3 : 4);
                 if (sizePart == string.Empty)
                 {
                     size = 256;
+                    signed = signedInteger;
                     valid = true;
                 }
                 else
                 {
-                    int integerSize;
-
-                    valid = int.TryParse(sizePart, out integerSize) 
-                        && integerSize % 8 == 0 && integerSize >= 8 
+                    valid = int.TryParse(sizePart, out int integerSize)
+                        && integerSize % 8 == 0 && integerSize >= 8
                         && integerSize <= 256;
                     size = valid ? integerSize : 0;
+                    signed = valid ? signedInteger : false;
                 }
             }
 
