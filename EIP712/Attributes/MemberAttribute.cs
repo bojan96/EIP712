@@ -12,11 +12,6 @@ namespace EIP712.Attributes
 
         public MemberAttribute(string abiType, int order)
         {
-            if (abiType == null)
-                throw new ArgumentNullException(nameof(abiType));
-            else if (!Util.IsValidAbiType(abiType))
-                throw new ArgumentException("Given type not supported or valid", nameof(abiType));
-
             AbiType = abiType;
             Order = order;
         }
