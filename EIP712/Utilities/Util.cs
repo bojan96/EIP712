@@ -11,7 +11,7 @@ namespace EIP712.Utilities
         /// <summary>
         /// Supported ABI types
         /// </summary>
-        public static readonly string[] AllowedTypes =
+        private static readonly string[] _allowedTypes =
             new string[]
             {
                 // TODO: Add support for more types
@@ -50,7 +50,7 @@ namespace EIP712.Utilities
         public static bool IsValidAbiType(string abiType)
         {
             Debug.Assert(abiType != null);
-            return AllowedTypes.Contains(abiType) 
+            return _allowedTypes.Contains(abiType) 
                 || IsValidBytesType(abiType, out int sizeBytes) 
                 || IsValidIntegerAbiType(abiType, out int sizeInts, out bool signed);
         }
