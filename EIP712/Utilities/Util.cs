@@ -42,8 +42,14 @@ namespace EIP712.Utilities
             return bytes.Length >= length ? bytes : ByteUtil.Merge(new byte[length - bytes.Length], bytes);
         }
 
+        /// <summary>
+        /// Determines whether specified type is valid ABI type
+        /// </summary>
+        /// <param name="abiType">ABI type</param>
+        /// <returns>true if valid, false otherwise</returns>
         public static bool IsValidAbiType(string abiType)
         {
+            Debug.Assert(abiType != null);
             return AllowedTypes.Contains(abiType) 
                 || IsValidBytesType(abiType, out int sizeBytes) 
                 || IsValidIntegerAbiType(abiType, out int sizeInts);
@@ -53,20 +59,36 @@ namespace EIP712.Utilities
         /// Determines whether specified ABI type is valid integer type
         /// </summary>
         /// <param name="intAbiType">ABI type</param>
-        /// <returns></returns>
+        /// <returns>true if specified type is valid integer type with size set to size of 
+        /// integer type, otherwise false with size equal to zero</returns>
         public static bool IsValidIntegerAbiType(string intAbiType, out int size)
         {
-            size = 0;
+            Debug.Assert(intAbiType != null);
 
-            if (intAbiType.StartsWith("uint") || intAbiType.StartsWith("int"))
+            size = 0;
+            bool signed = false;
+            bool valid = false;
+
+            if (intAbiType.StartsWith("uint") || (signed = intAbiType.StartsWith("int")))
             {
-                string sizePart = intAbiType.Substring(intAbiType.StartsWith("uint") ? 4 : 3);
-                return sizePart == string.Empty ||
-                    int.TryParse(sizePart, out size) &&
-                    size % 8 == 0 && size >= 8 && size <= 256;
+                string sizePart = intAbiType.Substring(signed ? 3 : 4);
+                if (sizePart == string.Empty)
+                {
+                    size = 256;
+                    valid = true;
+                }
+                else
+                {
+                    int integerSize;
+
+                    valid = int.TryParse(sizePart, out integerSize) 
+                        && integerSize % 8 == 0 && integerSize >= 8 
+                        && integerSize <= 256;
+                    size = valid ? integerSize : 0;
+                }
             }
-            else
-                return false;
+
+            return valid;
         }
 
         /// <summary>
