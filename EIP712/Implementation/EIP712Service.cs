@@ -140,19 +140,21 @@ namespace EIP712
         {
             byte[] result = new byte[0];
             byte[] part = null;
-            object val = null;
 
             foreach (var prop in props)
             {
                 // TODO: Support more types
 
-                val = prop.Item1.GetValue(structure);
+                object val = prop.Item1.GetValue(structure);
                 string abiType = prop.Item2.AbiType;
                 PropertyInfo propInfo = prop.Item1;
 
                 // Do not encode properties with null values
                 if (val == null)
                     continue;
+
+                if (!Util.IsValidAbiType(abiType))
+                    throw new InvalidAbiTypeException(propInfo.Name, abiType);
 
                 if(abiType == "address")
                 {
@@ -176,29 +178,20 @@ namespace EIP712
                 {
                     if (!(val is bool))
                         throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                    part = new IntTypeEncoder(false, 256).Encode(val);
+                    part = new BoolTypeEncoder().Encode(val);
                 }
                 else if(abiType == "tuple")
                     part = HashStruct(val);             
-                else if(abiType == "int" || abiType == "uint")
+                else if(Util.IsValidIntegerAbiType(abiType, out int intSize, out bool signed))
                 {
                     if (!Util.IsNumber(val))
                         throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                    part = new IntTypeEncoder(abiType == "int", 256).Encode(val);
+                    part = new IntTypeEncoder(signed, (uint)intSize).Encode(val);
                 }
-                else if((abiType.StartsWith("uint") || abiType.StartsWith("int")) 
-                    && int.TryParse(abiType.Substring(abiType.StartsWith("uint") ? 4 : 3), out int intSize) 
-                    && intSize % 8 == 0 && intSize >= 8 && intSize <= 256)
+                else if(Util.IsValidBytesType(abiType, out int bytesSize))
                 {
-                    if (!Util.IsNumber(val))
-                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
-                    part = new IntTypeEncoder(abiType.StartsWith("int"), (uint)intSize).Encode(val);
-                }
-                else if(abiType.StartsWith("bytes") && 
-                    int.TryParse(abiType.Substring(4), out int bytesSize) 
-                    && bytesSize > 0 && bytesSize <= 32)
-                {
-                    if (!(val is byte[]))
+                    // TODO: Validate byteArray length
+                    if (!(val is byte[] byteArray))
                         throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
                     part = new BytesElementaryTypeEncoder(bytesSize).Encode(val);
                 }
