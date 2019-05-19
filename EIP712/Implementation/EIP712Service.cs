@@ -98,7 +98,9 @@ namespace EIP712
 
             // Get all properties on which StructTypeAttribute is applied and order them by "Order" property
             Tuple<PropertyInfo, MemberAttribute>[] props = structType.GetTypeInfo().DeclaredProperties.
-                Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(MemberAttribute))).
+                Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(MemberAttribute))
+                // Skip null values
+                && prop.GetValue(structure) != null).
                 Select(prop => Tuple.Create(prop, prop.GetCustomAttribute<MemberAttribute>())).
                 OrderBy(propAttrPair => propAttrPair.Item2.Order).ToArray();
 
@@ -119,11 +121,6 @@ namespace EIP712
 
             string nameTypeConcatenated = props.Aggregate(string.Empty, (accumulated, prop) =>
             {
-
-                // If values is null do not encode type
-                if (prop.Item1.GetValue(structure) == null)
-                    return accumulated;
-
                 string prefix = accumulated == string.Empty ? string.Empty : ",";
                 // TODO: Make property name encoding configurable
                 string nameType = $"{prefix}{prop.Item2.AbiType} {prop.Item1.Name.ToCamelCase()}";
@@ -149,9 +146,6 @@ namespace EIP712
                 string abiType = prop.Item2.AbiType;
                 PropertyInfo propInfo = prop.Item1;
 
-                // Do not encode properties with null values
-                if (val == null)
-                    continue;
 
                 if (!Util.IsValidAbiType(abiType))
                     throw new InvalidAbiTypeException(propInfo.Name, abiType);
