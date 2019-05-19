@@ -81,7 +81,7 @@ namespace Tests
         [TestMethod]
         public void LargeIntegerSign()
         {
-
+            // Max uint256 value
             byte[] maxUint256Bytes = Enumerable.Repeat(0xff, 33).
                 Select(@byte => (byte)@byte).ToArray();
             maxUint256Bytes[32] = 0;
@@ -102,5 +102,51 @@ namespace Tests
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
 
+        [TestMethod]
+        public void BoolTypeSign()
+        {
+            byte[] signature = EIP712Service.Sign(new TestType
+            {
+                BoolType = true
+            }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature = ("0x20f8ffb5e0ca822597b62f63905d62dac1" +
+                "18245de814ca0d25d910b38ed61c14566c7f212dfeb04fc043219f0ec3e3ec" +
+                "75cfc10f590a8333faaa04643f3c6e4e1c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
+
+        [TestMethod]
+        public void BytesTypeSign()
+        {
+            byte[] signature = EIP712Service.Sign(new TestType
+            {
+                BytesType = new byte[1]
+            }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature = ("0xe7d7982b3650fa361c47b9758a5e0f8a8644a7" +
+                "11fc84be5e138924d24e21430237f82e45a462c64f9187f8efef69635916df17" +
+                "94a3afcd2cec7fa5b687d1c3e41c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
+
+        [TestMethod]
+        public void Bytes16Sign()
+        {
+
+            byte[] signature = EIP712Service.Sign(
+                new TestType
+                {
+                    Bytes16Type = Enumerable.Repeat<byte>(0xff, 16).ToArray()
+                }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature = ("0xbace47bbd339880de51139dccf245d29fc6ded7" +
+                "5b8216f22f773f2226568a8a45c85c949a6f6a59f356c66c657c12c240cf9fdac" +
+                "9b997362e2ed8069439f09c61c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
     }
 }
