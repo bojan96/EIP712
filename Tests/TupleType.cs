@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace Tests
 {
-    class TestType
+    class TupleType
     {
         [Member("string", 1)]
         public string StringType { get; set; }
@@ -22,9 +22,5 @@ namespace Tests
 
         [Member("bytes16", 6)]
         public byte[] Bytes16Type { get; set; }
-
-        [Member("tuple", 7)]
-        public TupleType TupleType { get; set; }
-
     }
 }
