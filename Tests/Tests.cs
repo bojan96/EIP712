@@ -148,5 +148,26 @@ namespace Tests
 
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
+
+        [TestMethod]
+        public void TupleSign()
+        {
+            byte[] signature = EIP712Service.Sign(
+                new TestType
+                {
+                    StringType = "testString",
+                    TupleType = new TupleType
+                    {
+                        StringType = "testString"
+                    }
+                }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature
+                = ("0x0b6b1a9ea0715e1f78a29b3b38589fd4e9f01c0344817" +
+                "a5c1c67e96565ec3f4c722f84aec1fd8f340b9628573fdcd7b" +
+                "abc44f70928be22242991c61d860d19d01c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
     }
 }
