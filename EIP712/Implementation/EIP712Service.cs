@@ -99,6 +99,12 @@ namespace EIP712
             return _keccak.CalculateHash(merged);
         }
 
+        /// <summary>
+        /// typeHash implementation from EIP712 spec
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="structure"></param>
+        /// <returns></returns>
         private static byte[] CalculateTypeHash<T>(T structure)
         {
             string encodedType = EncodeType(structure);
@@ -175,6 +181,12 @@ namespace EIP712
             return result;
         }
 
+        /// <summary>
+        /// encodeType implementation from EIP712 spec
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="structure"></param>
+        /// <returns></returns>
         private static string EncodeType<T>(T structure)
         {
             string encodedType = $"{structure.GetStructureName()}(";
@@ -221,6 +233,7 @@ namespace EIP712
                 if (!depTypes.ContainsKey(typeName))
                     depTypes[typeName] = EncodeType(val);
 
+                // Find nested types in this structure nested type
                 FindNestedTypes(val, depTypes);
             }
         }
