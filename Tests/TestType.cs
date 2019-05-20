@@ -24,7 +24,7 @@ namespace Tests
         public byte[] Bytes16Type { get; set; }
 
         [Member("NestedType", 7)]
-        public NestedType TupleType { get; set; }
+        public NestedType NestedType { get; set; }
 
     }
 }
