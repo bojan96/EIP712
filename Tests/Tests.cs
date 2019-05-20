@@ -62,18 +62,27 @@ namespace Tests
             {
                 StringType = "test",
                 AddressType = ZeroAddress,
-                IntegerType = 0 
-            }, new EIP712.EIP712Domain()
+                IntegerType = 0,
+                BoolType = true,
+                BytesType = new byte[1],
+                Bytes16Type = new byte[16],
+                TupleType = new NestedType
+                {
+                    StringType = "test"
+                }
+            }, new EIP712Domain()
             {
                 Name = "Test domain name",
                 Version = "1",
                 ChainId = 3,
+                Salt = new byte[32],
                 VerifyingContract = ZeroAddress
             }, PrivateKey).Packed;
 
             byte[] expectedSignature 
-                = ("0xbb3221b9a45d5cd9d5f67eba1b23b19bef8176ce640eeb9c29f5d32190f32c8b" +
-                "00e963d60e72b79a56c07006cc83eb56b4e71ecffe2b08cfdcd52e7b18d755201c").HexToByteArray();
+                = ("0x9c89f5f9fa10ec8484edb9c627a888abece2de1e8500c90839" +
+                "c83be4fbc0fd773706e2e10c451e197a5262a7c9e97c2ce53b21a18" +
+                "9d1cca5c11e068fcafff3d41b").HexToByteArray();
 
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
@@ -156,7 +165,7 @@ namespace Tests
                 new TestType
                 {
                     StringType = "testString",
-                    TupleType = new TupleType
+                    TupleType = new NestedType
                     {
                         StringType = "testString"
                     }

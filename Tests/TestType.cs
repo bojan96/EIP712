@@ -23,8 +23,8 @@ namespace Tests
         [Member("bytes16", 6)]
         public byte[] Bytes16Type { get; set; }
 
-        [Member("TupleType", 7)]
-        public TupleType TupleType { get; set; }
+        [Member("NestedType", 7)]
+        public NestedType TupleType { get; set; }
 
     }
 }
