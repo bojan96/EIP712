@@ -102,7 +102,9 @@ namespace EIP712
         private static byte[] CalculateTypeHash<T>(T structure)
         {
             string encodedType = EncodeType(structure);
-            encodedType = FindTupleTypes(structure).Aggregate(encodedType, 
+            encodedType = FindTupleTypes(structure)
+                .OrderBy(t => t.Item1)
+                .Aggregate(encodedType, 
                 (accumulated, t) => accumulated + t.Item2);
             return _keccak.CalculateHash(Encoding.UTF8.GetBytes(encodedType));
         }
@@ -119,10 +121,6 @@ namespace EIP712
                 object val = prop.Item1.GetValue(structure);
                 string abiType = prop.Item2.AbiType;
                 PropertyInfo propInfo = prop.Item1;
-
-
-                if (!Util.IsValidAbiType(abiType))
-                    throw new InvalidAbiTypeException(propInfo.Name, abiType);
 
                 if(abiType == "address")
                 {
@@ -164,11 +162,8 @@ namespace EIP712
                     part = new BytesElementaryTypeEncoder(bytesSize).Encode(val);
                 }
                 else
-                {
-                    // Unreachable
-                    Debug.Assert(false);
-                }
-
+                    throw new InvalidAbiTypeException(propInfo.Name, abiType);
+                
                 Debug.Assert(part.Length == 32);
 
                 result = ByteUtil.Merge(result, part);
@@ -185,7 +180,11 @@ namespace EIP712
             {
                 string prefix = accumulated == string.Empty ? string.Empty : ",";
                 // TODO: Make property name encoding configurable
-                string nameType = $"{prefix}{prop.Item2.AbiType} {prop.Item1.Name.ToCamelCase()}";
+                string abiType = prop.Item2.AbiType;
+                PropertyInfo propInfo = prop.Item1;
+                object val = propInfo.GetValue(structure);
+                string nameType = $"{prefix}{(abiType != "tuple" ? abiType : val.GetStructureName())} " +
+                $"{propInfo.Name.ToCamelCase()}";
 
                 return accumulated + nameType;
             });
@@ -208,7 +207,7 @@ namespace EIP712
                 string typeName = val.GetStructureName();
                 string encodedType = EncodeType(val);
 
-                if(list.Find(t => t.Item1 == typeName) != null)
+                if(list.FindIndex(t => t.Item1 == typeName) == -1)
                     list.Add(new Tuple<string, string>(typeName, encodedType));
                 list.AddRange(FindTupleTypes(val));
             }
