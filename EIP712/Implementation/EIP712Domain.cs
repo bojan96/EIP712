@@ -19,6 +19,6 @@ namespace EIP712
         public string VerifyingContract { get; set; }
 
         [Member("bytes32", 5)]
-        public string Salt { get; set; }
+        public byte[] Salt { get; set; }
     }
 }
