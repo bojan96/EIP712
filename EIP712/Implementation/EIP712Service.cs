@@ -1,14 +1,13 @@
 ﻿using EIP712.Attributes;
 using EIP712.Exceptions;
 using EIP712.Utilities;
-using Nethereum.ABI;
 using Nethereum.ABI.Encoders;
 using Nethereum.Signer;
 using Nethereum.Util;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
 using System.Reflection;
 using System.Text;
 
@@ -94,51 +93,26 @@ namespace EIP712
         /// <returns></returns>
         private static byte[] HashStruct<T>(T structure) where T : class
         {
-            Type structType = structure.GetType();
-
-            // Get all properties on which StructTypeAttribute is applied and order them by "Order" property
-            Tuple<PropertyInfo, MemberAttribute>[] props = structType.GetTypeInfo().DeclaredProperties.
-                Where(prop => prop.CustomAttributes.Any(attr => attr.AttributeType == typeof(MemberAttribute))
-                // Skip null values
-                && prop.GetValue(structure) != null).
-                Select(prop => Tuple.Create(prop, prop.GetCustomAttribute<MemberAttribute>())).
-                OrderBy(propAttrPair => propAttrPair.Item2.Order).ToArray();
-
-            byte[] typeHash = CalculateTypeHash(structure, props);
-            byte[] encodedData = EncodeData(structure, props);
+            byte[] typeHash = CalculateTypeHash(structure);
+            byte[] encodedData = EncodeData(structure);
             byte[] merged = ByteUtil.Merge(typeHash, encodedData);
             return _keccak.CalculateHash(merged);
         }
 
-        private static byte[] CalculateTypeHash<T>(T structure,
-            Tuple<PropertyInfo, MemberAttribute>[] props)
+        private static byte[] CalculateTypeHash<T>(T structure)
         {
-
-            Type structType = structure.GetType();
-            StructNameAttribute nameAttr = structType.GetTypeInfo().
-                GetCustomAttribute<StructNameAttribute>();
-            string encodedType = $"{(nameAttr == null ? structType.Name : nameAttr.Name)}(";
-
-            string nameTypeConcatenated = props.Aggregate(string.Empty, (accumulated, prop) =>
-            {
-                string prefix = accumulated == string.Empty ? string.Empty : ",";
-                // TODO: Make property name encoding configurable
-                string nameType = $"{prefix}{prop.Item2.AbiType} {prop.Item1.Name.ToCamelCase()}";
-
-                return accumulated + nameType;
-            });
-
-            encodedType += $"{nameTypeConcatenated})";
-
+            string encodedType = EncodeType(structure);
+            encodedType = FindTupleTypes(structure).Aggregate(encodedType, 
+                (accumulated, t) => accumulated + t.Item2);
             return _keccak.CalculateHash(Encoding.UTF8.GetBytes(encodedType));
         }
 
-        private static byte[] EncodeData<T>(T structure, Tuple<PropertyInfo, MemberAttribute>[] props)
+        private static byte[] EncodeData<T>(T structure)
         {
             byte[] result = new byte[0];
             byte[] part = null;
 
-            foreach (var prop in props)
+            foreach (var prop in structure.GetMemberProperties())
             {
                 // TODO: Support more types
 
@@ -200,6 +174,46 @@ namespace EIP712
                 result = ByteUtil.Merge(result, part);
             }
             return result;
+        }
+
+        private static string EncodeType<T>(T structure)
+        {
+            string encodedType = $"{structure.GetStructureName()}(";
+
+            string nameTypeConcatenated = structure.GetMemberProperties()
+                .Aggregate(string.Empty, (accumulated, prop) =>
+            {
+                string prefix = accumulated == string.Empty ? string.Empty : ",";
+                // TODO: Make property name encoding configurable
+                string nameType = $"{prefix}{prop.Item2.AbiType} {prop.Item1.Name.ToCamelCase()}";
+
+                return accumulated + nameType;
+            });
+
+            encodedType += $"{nameTypeConcatenated})";
+
+            return encodedType;
+        }
+
+        private static Tuple<string, string>[] FindTupleTypes<T>(T structure)
+        {
+            List<Tuple<string, string>> list = new List<Tuple<string, string>>();
+            Tuple<PropertyInfo, MemberAttribute>[] props = structure.GetMemberProperties();
+            IEnumerable<Tuple<PropertyInfo,MemberAttribute>> tupleProps 
+                = props.Where(prop => prop.Item2.AbiType == "tuple");
+
+            foreach (var prop in tupleProps)
+            {
+                object val = prop.Item1.GetValue(structure);
+                string typeName = val.GetStructureName();
+                string encodedType = EncodeType(val);
+
+                if(list.Find(t => t.Item1 == typeName) != null)
+                    list.Add(new Tuple<string, string>(typeName, encodedType));
+                list.AddRange(FindTupleTypes(val));
+            }
+
+            return list.ToArray();
         }
 
         #endregion
