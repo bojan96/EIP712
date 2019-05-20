@@ -23,7 +23,7 @@ namespace Tests
         [Member("bytes16", 6)]
         public byte[] Bytes16Type { get; set; }
 
-        [Member("tuple", 7)]
+        [Member("Test", 7)]
         public TupleType TupleType { get; set; }
 
     }
