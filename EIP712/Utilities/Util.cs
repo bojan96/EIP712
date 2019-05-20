@@ -18,7 +18,6 @@ namespace EIP712.Utilities
                 "address",
                 "bytes",
                 "string",
-                "tuple",
                 "bool"
             };
 

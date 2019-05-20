@@ -7,12 +7,12 @@ namespace EIP712.Attributes
     public class MemberAttribute : Attribute
     {
 
-        public string AbiType { get; }
+        public string Type { get; }
         public int Order { get; }
 
         public MemberAttribute(string abiType, int order)
         {
-            AbiType = abiType;
+            Type = abiType;
             Order = order;
         }
     }

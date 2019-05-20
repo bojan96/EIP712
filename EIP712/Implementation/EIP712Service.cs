@@ -102,10 +102,16 @@ namespace EIP712
         private static byte[] CalculateTypeHash<T>(T structure)
         {
             string encodedType = EncodeType(structure);
-            encodedType = FindTupleTypes(structure)
-                .OrderBy(t => t.Item1)
+            Dictionary<string, string> depTypes = new Dictionary<string, string>();
+
+            // Find all types nested in passed structure
+            FindNestedTypes(structure, depTypes);
+
+            // Order types by name (ascending), concatenate all encodings
+            encodedType = depTypes.ToList()
+                .OrderBy(t => t.Key)
                 .Aggregate(encodedType, 
-                (accumulated, t) => accumulated + t.Item2);
+                (accumulated, t) => accumulated + t.Value);
             return _keccak.CalculateHash(Encoding.UTF8.GetBytes(encodedType));
         }
 
@@ -116,53 +122,51 @@ namespace EIP712
 
             foreach (var prop in structure.GetMemberProperties())
             {
-                // TODO: Support more types
+                // TODO: Support array types
 
                 object val = prop.Item1.GetValue(structure);
-                string abiType = prop.Item2.AbiType;
+                string memberType = prop.Item2.Type;
                 PropertyInfo propInfo = prop.Item1;
 
-                if(abiType == "address")
+                if (memberType == "address")
                 {
                     if (!(val is string))
-                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        throw new MemberTypeException(propInfo.Name, memberType, propInfo.PropertyType);
                     part = new AddressTypeEncoder().Encode(val);
                 }
-                else if(abiType == "bytes")
+                else if (memberType == "bytes")
                 {
                     if (!(val is byte[] value))
-                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        throw new MemberTypeException(propInfo.Name, memberType, propInfo.PropertyType);
                     part = _keccak.CalculateHash(value);
                 }
-                else if(abiType == "string")
+                else if (memberType == "string")
                 {
                     if (!(val is string str))
-                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        throw new MemberTypeException(propInfo.Name, memberType, propInfo.PropertyType);
                     part = _keccak.CalculateHash(Encoding.UTF8.GetBytes(str));
                 }
-                else if(abiType == "bool")
+                else if (memberType == "bool")
                 {
                     if (!(val is bool))
-                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        throw new MemberTypeException(propInfo.Name, memberType, propInfo.PropertyType);
                     part = new BoolTypeEncoder().Encode(val);
                 }
-                else if(abiType == "tuple")
-                    part = HashStruct(val);             
-                else if(Util.IsValidIntegerAbiType(abiType, out int intSize, out bool signed))
+                else if (Util.IsValidIntegerAbiType(memberType, out int intSize, out bool signed))
                 {
                     if (!Util.IsNumber(val))
-                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        throw new MemberTypeException(propInfo.Name, memberType, propInfo.PropertyType);
                     part = new IntTypeEncoder(signed, (uint)intSize).Encode(val);
                 }
-                else if(Util.IsValidBytesType(abiType, out int bytesSize))
+                else if (Util.IsValidBytesType(memberType, out int bytesSize))
                 {
                     // TODO: Validate byteArray length
                     if (!(val is byte[] byteArray))
-                        throw new MemberTypeException(propInfo.Name, abiType, propInfo.PropertyType);
+                        throw new MemberTypeException(propInfo.Name, memberType, propInfo.PropertyType);
                     part = new BytesElementaryTypeEncoder(bytesSize).Encode(val);
                 }
                 else
-                    throw new InvalidAbiTypeException(propInfo.Name, abiType);
+                    part = HashStruct(val);
                 
                 Debug.Assert(part.Length == 32);
 
@@ -180,10 +184,10 @@ namespace EIP712
             {
                 string prefix = accumulated == string.Empty ? string.Empty : ",";
                 // TODO: Make property name encoding configurable
-                string abiType = prop.Item2.AbiType;
+
+                string memberType = prop.Item2.Type;
                 PropertyInfo propInfo = prop.Item1;
-                object val = propInfo.GetValue(structure);
-                string nameType = $"{prefix}{(abiType != "tuple" ? abiType : val.GetStructureName())} " +
+                string nameType = $"{prefix}{memberType} " +
                 $"{propInfo.Name.ToCamelCase()}";
 
                 return accumulated + nameType;
@@ -194,25 +198,31 @@ namespace EIP712
             return encodedType;
         }
 
-        private static Tuple<string, string>[] FindTupleTypes<T>(T structure)
+        /// <summary>
+        /// Gets all structures nested in passed structure
+        /// </summary>
+        /// <typeparam name="T">Structured data datatype</typeparam>
+        /// <param name="structure">Structure</param>
+        /// <returns></returns>
+        private static void FindNestedTypes<T>(T structure, 
+            Dictionary<string, string> depTypes = null)
         {
-            List<Tuple<string, string>> list = new List<Tuple<string, string>>();
             Tuple<PropertyInfo, MemberAttribute>[] props = structure.GetMemberProperties();
-            IEnumerable<Tuple<PropertyInfo,MemberAttribute>> tupleProps 
-                = props.Where(prop => prop.Item2.AbiType == "tuple");
+            IEnumerable<Tuple<PropertyInfo,MemberAttribute>> nestedTypesProps 
+                // Properties which member type is not any of the valid 
+                // ABI types is considered custom nested type
+                = props.Where(prop => !Util.IsValidAbiType(prop.Item2.Type));
 
-            foreach (var prop in tupleProps)
+            foreach (var prop in nestedTypesProps)
             {
                 object val = prop.Item1.GetValue(structure);
                 string typeName = val.GetStructureName();
-                string encodedType = EncodeType(val);
 
-                if(list.FindIndex(t => t.Item1 == typeName) == -1)
-                    list.Add(new Tuple<string, string>(typeName, encodedType));
-                list.AddRange(FindTupleTypes(val));
+                if (!depTypes.ContainsKey(typeName))
+                    depTypes[typeName] = EncodeType(val);
+
+                FindNestedTypes(val, depTypes);
             }
-
-            return list.ToArray();
         }
 
         #endregion
