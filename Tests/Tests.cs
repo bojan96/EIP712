@@ -12,8 +12,9 @@ namespace Tests
 
         private const string ZeroAddress = "0x0000000000000000000000000000000000000000";
         private const string PrivateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+        private const string Address = "0x12890D2cce102216644c59daE5baed380d84830c";
 
-        [TestMethod()]
+        [TestMethod]
         public void AddressTypeSign()
         {
             byte[] signature = EIP712Service.Sign(new TestType { AddressType = ZeroAddress }, 
@@ -177,6 +178,38 @@ namespace Tests
                 "de75ecf520f5ce0dedeb50df3f054631b").HexToByteArray();
 
             CollectionAssert.AreEqual(expectedSignature, signature);
+        }
+
+        [TestMethod]
+        public void VerifySignature()
+        {
+            TestType testType = new TestType
+            {
+                StringType = "test",
+                AddressType = ZeroAddress,
+                IntegerType = 0,
+                BoolType = true,
+                BytesType = new byte[1],
+                Bytes16Type = new byte[16],
+                NestedType = new NestedType
+                {
+                    StringType = "test"
+                }
+            };
+            EIP712Domain domain = new EIP712Domain()
+            {
+                Name = "Test domain name",
+                Version = "1",
+                ChainId = 3,
+                Salt = new byte[32],
+                VerifyingContract = ZeroAddress
+            };
+
+            EthereumSignature sig = EIP712Service.Sign(testType, domain, PrivateKey);
+            bool sigValid = EIP712Service.VerifySignature(testType, domain, 
+                Address, sig.Packed);
+
+            Assert.IsTrue(sigValid);
         }
     }
 }
