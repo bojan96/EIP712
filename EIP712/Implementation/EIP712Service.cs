@@ -2,6 +2,7 @@
 using EIP712.Exceptions;
 using EIP712.Utilities;
 using Nethereum.ABI.Encoders;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Util;
 using System;
@@ -18,6 +19,7 @@ namespace EIP712
 
         private static readonly byte[] _eip191Header = new byte[] { 0x19, 0x1 };
         private static readonly Sha3Keccack _keccak = Sha3Keccack.Current;
+        private static readonly MessageSigner _signer = new MessageSigner();
 
         #region PublicApi
         /// <summary>
@@ -27,6 +29,7 @@ namespace EIP712
         /// <param name="structure">Structured data to encode</param>
         /// <param name="domain">EIP-712 domain</param>
         /// <returns>Encoded data</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="structure"/> or <paramref name="domain"/> is equal to <c>null</c></exception>
         public static byte[] Encode<T>(T structure, EIP712Domain domain) where T : class
         {
             if (domain == null)
@@ -47,8 +50,8 @@ namespace EIP712
         /// <param name="structure">Structured data to hash</param>
         /// <param name="domain">EIP-712 domain</param>
         /// <returns>Keccak256 of encoded data</returns>
-        /// <exception cref="ArgumentNullException">structure or domain is null</exception>
-        /// <exception cref=""
+        /// <exception cref="ArgumentNullException"><paramref name="domain"/> or <paramref name="structure"/> 
+        /// is equal to <c>null</c></exception>
         public static byte[] Hash<T>(T structure, EIP712Domain domain) where T : class
         {
             if (structure == null)
@@ -63,10 +66,11 @@ namespace EIP712
         /// Sign structured data
         /// </summary>
         /// <typeparam name="T">Structured data datatype</typeparam>
-        /// <param name="structure">Structured data to hash</param>
+        /// <param name="structure">Structured data to sign</param>
         /// <param name="domain">EIP-712 domain</param>
         /// <param name="privateKey">Ethereum private key</param>
         /// <returns><see cref="EthereumSignature"/></returns>
+        /// <exception cref="ArgumentNullException">Any of the arguments is equal to <c>null</c></exception>
         public static EthereumSignature Sign<T>(T structure, EIP712Domain domain, string privateKey) where T : class
         {
             if (structure == null)
@@ -76,10 +80,36 @@ namespace EIP712
             if (privateKey == null)
                 throw new ArgumentNullException(nameof(privateKey));
 
-            EthECDSASignature sig = new MessageSigner().SignAndCalculateV(Hash(structure, domain), privateKey);
+            EthECDSASignature sig = _signer.SignAndCalculateV(Hash(structure, domain), privateKey);
 
             // Returning custom type since we do not want force lib users to install additional package  (i.e. Nethereum)
             return new EthereumSignature(Util.PadBytes(sig.R, 32), Util.PadBytes(sig.S, 32), sig.V);
+        }
+
+
+        /// <summary>
+        /// Verify signature 
+        /// </summary>
+        /// <typeparam name="T">Structured data datatype</typeparam>
+        /// <param name="structure">Structured data for which to verify signature</param>
+        /// <param name="domain">EIP-712 domain</param>
+        /// <param name="signerAddress">Ethereum address</param>
+        /// <param name="signature">Signature of the structured data</param>
+        /// <returns><c>true</c> if signature is valid <c>false</c> otherwise</returns>
+        /// <exception cref="ArgumentNullException">Any of the arguments is equal to <c>null</c></exception>
+        /// <exception cref="ArgumentException">Invalid Ethereum address</exception>
+        public static bool VerifySignature<T>(T structure, EIP712Domain domain, string signerAddress, byte[] signature) where T : class
+        {
+            structure = structure ?? throw new ArgumentNullException(nameof(structure));
+            domain = domain ?? throw new ArgumentNullException(nameof(domain));
+            signerAddress = signerAddress ?? throw new ArgumentNullException(nameof(signerAddress));
+            signature = signature ?? throw new ArgumentNullException(nameof(signature));
+
+            if (! AddressUtil.Current.IsValidEthereumAddressHexFormat(signerAddress))
+                throw new ArgumentException("Invalid ethereum address", nameof(signerAddress));
+
+            string recoveredAddress = _signer.EcRecover(Hash(structure, domain), signature.ToHex(true));
+            return AddressUtil.Current.AreAddressesTheSame(recoveredAddress, signerAddress);
         }
         #endregion
 
