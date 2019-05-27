@@ -12,8 +12,9 @@ namespace Tests
 
         private const string ZeroAddress = "0x0000000000000000000000000000000000000000";
         private const string PrivateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
+        private const string Address = "0x12890D2cce102216644c59daE5baed380d84830c";
 
-        [TestMethod()]
+        [TestMethod]
         public void AddressTypeSign()
         {
             byte[] signature = EIP712Service.Sign(new TestType { AddressType = ZeroAddress }, 
@@ -62,18 +63,27 @@ namespace Tests
             {
                 StringType = "test",
                 AddressType = ZeroAddress,
-                IntegerType = 0 
-            }, new EIP712.EIP712Domain()
+                IntegerType = 0,
+                BoolType = true,
+                BytesType = new byte[1],
+                Bytes16Type = new byte[16],
+                NestedType = new NestedType
+                {
+                    StringType = "test"
+                }
+            }, new EIP712Domain()
             {
                 Name = "Test domain name",
                 Version = "1",
                 ChainId = 3,
+                Salt = new byte[32],
                 VerifyingContract = ZeroAddress
             }, PrivateKey).Packed;
 
             byte[] expectedSignature 
-                = ("0xbb3221b9a45d5cd9d5f67eba1b23b19bef8176ce640eeb9c29f5d32190f32c8b" +
-                "00e963d60e72b79a56c07006cc83eb56b4e71ecffe2b08cfdcd52e7b18d755201c").HexToByteArray();
+                = ("0x6253f6c2c9e0fca3f81d43c214b7e78b07208ca4c8d4a9eb49d17" +
+                "d8eca9657d932b6d7292bc919412c3986995a038ce32ea27d0eb8ccb46" +
+                "f6855acb0b3928b001c").HexToByteArray();
 
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
@@ -81,7 +91,7 @@ namespace Tests
         [TestMethod]
         public void LargeIntegerSign()
         {
-
+            // Max uint256 value
             byte[] maxUint256Bytes = Enumerable.Repeat(0xff, 33).
                 Select(@byte => (byte)@byte).ToArray();
             maxUint256Bytes[32] = 0;
@@ -102,5 +112,104 @@ namespace Tests
             CollectionAssert.AreEqual(expectedSignature, signature);
         }
 
+        [TestMethod]
+        public void BoolTypeSign()
+        {
+            byte[] signature = EIP712Service.Sign(new TestType
+            {
+                BoolType = true
+            }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature = ("0x20f8ffb5e0ca822597b62f63905d62dac1" +
+                "18245de814ca0d25d910b38ed61c14566c7f212dfeb04fc043219f0ec3e3ec" +
+                "75cfc10f590a8333faaa04643f3c6e4e1c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
+
+        [TestMethod]
+        public void BytesTypeSign()
+        {
+            byte[] signature = EIP712Service.Sign(new TestType
+            {
+                BytesType = new byte[1]
+            }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature = ("0xe7d7982b3650fa361c47b9758a5e0f8a8644a7" +
+                "11fc84be5e138924d24e21430237f82e45a462c64f9187f8efef69635916df17" +
+                "94a3afcd2cec7fa5b687d1c3e41c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
+
+        [TestMethod]
+        public void Bytes16Sign()
+        {
+
+            byte[] signature = EIP712Service.Sign(
+                new TestType
+                {
+                    Bytes16Type = Enumerable.Repeat<byte>(0xff, 16).ToArray()
+                }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature = ("0xbace47bbd339880de51139dccf245d29fc6ded7" +
+                "5b8216f22f773f2226568a8a45c85c949a6f6a59f356c66c657c12c240cf9fdac" +
+                "9b997362e2ed8069439f09c61c").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
+
+        [TestMethod]
+        public void NestedTypeSign()
+        {
+            byte[] signature = EIP712Service.Sign(
+                new TestType
+                {
+                    StringType = "test",
+                    NestedType = new NestedType
+                    {
+                        StringType = "test"
+                    }
+                }, new EIP712Domain(), PrivateKey).Packed;
+
+            byte[] expectedSignature
+                = ("0x01aae98215710319ec961d74e32c27fd986404244c5230" +
+                "0fbc9092792cc097c86c5e58491a7da2e0a39e1fa777a356d82" +
+                "de75ecf520f5ce0dedeb50df3f054631b").HexToByteArray();
+
+            CollectionAssert.AreEqual(expectedSignature, signature);
+        }
+
+        [TestMethod]
+        public void VerifySignature()
+        {
+            TestType testType = new TestType
+            {
+                StringType = "test",
+                AddressType = ZeroAddress,
+                IntegerType = 0,
+                BoolType = true,
+                BytesType = new byte[1],
+                Bytes16Type = new byte[16],
+                NestedType = new NestedType
+                {
+                    StringType = "test"
+                }
+            };
+            EIP712Domain domain = new EIP712Domain()
+            {
+                Name = "Test domain name",
+                Version = "1",
+                ChainId = 3,
+                Salt = new byte[32],
+                VerifyingContract = ZeroAddress
+            };
+
+            EthereumSignature sig = EIP712Service.Sign(testType, domain, PrivateKey);
+            bool sigValid = EIP712Service.VerifySignature(testType, domain, 
+                Address, sig.Packed);
+
+            Assert.IsTrue(sigValid);
+        }
     }
 }
